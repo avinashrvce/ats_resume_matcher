@@ -1,0 +1,21 @@
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.pytype/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Generated/test files
+sample_resume.pdf
+*.log
