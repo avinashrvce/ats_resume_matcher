@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
-from google import genai
+import google.generativeai as genai
 from pypdf import PdfReader
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -90,15 +90,13 @@ def analyze_resume():
         return jsonify({"error": {"message": "GOOGLE_API_KEY or GEMINI_API_KEY is not set. Add it to the .env file or your environment before running the app."}}), 500
 
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
         resume_text = extract_pdf_text(pdf_bytes)
         if not resume_text:
             return jsonify({"error": {"message": "Could not read any text from the uploaded PDF. Please upload a text-based PDF resume."}}), 400
 
-        response = client.models.generate_content(
-            model=DEFAULT_MODEL,
-            contents=build_prompt(job_description, resume_text),
-        )
+        model = genai.GenerativeModel(DEFAULT_MODEL)
+        response = model.generate_content(build_prompt(job_description, resume_text))
 
         raw_text = getattr(response, "text", "")
         if not raw_text:
