@@ -31,6 +31,29 @@ ResumeMatch is a web app that analyzes a resume against a job description and pr
 - `.env.example` — sample environment file
 - `requirements.txt` — Python dependencies
 
+## Architecture
+
+Browser
+   ↓
+Flask REST API
+   ↓
+PDF Text Extraction
+   ↓
+Prompt Construction
+   ↓
+Gemini LLM
+   ↓
+Structured JSON
+   ↓
+ATS Analysis + Tailored Resume
+
+## Security
+
+- API key in environment
+- No original resume persistence
+- file size validation
+- production considerations
+
 ## Setup
 
 1. Create and activate a virtual environment:

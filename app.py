@@ -30,7 +30,8 @@ def extract_pdf_text(pdf_bytes: bytes) -> str:
 
 def build_prompt(job_description: str, resume_text: str) -> str:
     return f"""You are an expert ATS (Applicant Tracking System) analyst and resume coach.
-
+Never invent experience, skills, certifications, achievements, employers, metrics or technologies not present in the source resume.
+    
 Below is the candidate resume text extracted from the PDF, and the job description to compare against.
 
 RESUME TEXT:
