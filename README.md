@@ -89,6 +89,47 @@ ATS Analysis + Tailored Resume
    http://127.0.0.1:5000
    ```
 
+## Run with Docker
+
+1. Install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+2. In the project folder, create `.env` from the example if it does not already
+   exist, then add a valid Gemini API key:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+   ```env
+   GOOGLE_API_KEY=your_google_api_key_here
+   GEMINI_MODEL=gemini-3.5-flash
+   PORT=5000
+   ```
+
+3. Build and start the container:
+
+   ```powershell
+   docker compose up --build -d
+   ```
+
+4. Open http://localhost:5000.
+
+Useful commands:
+
+```powershell
+# Follow application logs
+docker compose logs -f
+
+# Stop and remove the container
+docker compose down
+
+# Rebuild after changing application code or dependencies
+docker compose up --build -d
+```
+
+The `.env` file is passed to the container at runtime and excluded from the
+image build context, so do not commit it to Git.
+
 ## Notes
 
 - The app expects a PDF resume and a job description text.
