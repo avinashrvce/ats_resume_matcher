@@ -242,6 +242,10 @@
   }
   .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-top: 4px; }
   .score-grade { font-size: 13px; font-weight: 500; padding: 4px 14px; border-radius: 20px; }
+  .tailor-prompt { background: var(--accent-soft); border: 1px solid rgba(107,127,255,0.25); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .tailor-prompt-text { font-size: 15px; color: var(--text); }
+  .tailor-prompt-actions { display: flex; gap: 10px; flex-shrink: 0; }
+  @media (max-width: 560px) { .tailor-prompt { align-items: stretch; flex-direction: column; } .tailor-prompt-actions { justify-content: flex-end; } }
 
   /* ── Breakdown ── */
   .breakdown-card {
@@ -400,6 +404,14 @@
       </div>
     </div>
 
+    <div class="tailor-prompt" id="tailorPrompt">
+      <div class="tailor-prompt-text">Tailor the resume for this job?</div>
+      <div class="tailor-prompt-actions">
+        <button class="btn btn-primary" id="tailorYesBtn" onclick="tailorResume()">Yes, tailor it</button>
+        <button class="btn btn-secondary" onclick="skipTailoring()">No, thanks</button>
+      </div>
+    </div>
+
     <div class="two-col">
       <div class="tag-panel">
         <div class="tag-panel-title">✓ Keywords Matched</div>
@@ -416,6 +428,7 @@
       <div id="suggestionsList"></div>
     </div>
 
+    <div id="tailoredSection" style="display:none;">
     <div class="results-header" style="margin-top:32px;">
       <div class="results-title">Tailored Resume</div>
       <div class="divider"></div>
@@ -431,6 +444,7 @@
         <button class="copy-btn" onclick="copyResume()">Copy</button>
       </div>
       <div class="tailored-body" id="tailoredBody"></div>
+    </div>
     </div>
   </div>
 </main>
@@ -601,7 +615,41 @@ function renderResults(d) {
         <div class="suggestion-text">${s.text}</div>
       </div>`).join('');
 
-  document.getElementById('tailoredBody').textContent = d.tailored_resume || '';
+  document.getElementById('tailorPrompt').style.display = 'flex';
+  document.getElementById('tailoredSection').style.display = 'none';
+  document.getElementById('tailoredBody').textContent = '';
+}
+
+async function tailorResume() {
+  const btn = document.getElementById('tailorYesBtn');
+  const errBox = document.getElementById('errorBox');
+  btn.disabled = true;
+  errBox.style.display = 'none';
+  showLoading('Tailoring your resume…', 'Rewriting it for this role');
+
+  try {
+    const formData = new FormData();
+    formData.append('resume', uploadedFile, uploadedFile.name);
+    formData.append('job_description', document.getElementById('jdInput').value.trim());
+    const res = await fetch('/api/tailor', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || 'The backend could not tailor your resume.');
+
+    document.getElementById('tailoredBody').textContent = data.tailored_resume || '';
+    document.getElementById('tailorPrompt').style.display = 'none';
+    document.getElementById('tailoredSection').style.display = 'block';
+    document.getElementById('tailoredSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    errBox.textContent = 'Something went wrong: ' + e.message + '. Please try again.';
+    errBox.style.display = 'block';
+  } finally {
+    hideLoading();
+    btn.disabled = false;
+  }
+}
+
+function skipTailoring() {
+  document.getElementById('tailorPrompt').style.display = 'none';
 }
 
 function copyResume() {
@@ -617,6 +665,8 @@ function clearAll() {
   removeFile();
   document.getElementById('jdInput').value = '';
   document.getElementById('results').style.display = 'none';
+  document.getElementById('tailorPrompt').style.display = 'flex';
+  document.getElementById('tailoredSection').style.display = 'none';
   document.getElementById('errorBox').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

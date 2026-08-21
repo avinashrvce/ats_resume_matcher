@@ -55,9 +55,24 @@ Return ONLY a valid JSON object (no markdown, no explanation) with this exact st
   "missing_keywords": [<array of important missing keyword strings, max 12>],
   "suggestions": [
     {{"type": "tip|warn", "text": "<actionable suggestion — wrap the key term in <strong> tags>"}}
-  ],
-  "tailored_resume": "<full resume rewritten for this job role — incorporate missing keywords naturally, strengthen impact with metrics language, reorder bullet points to match JD priorities. Plain text, preserve section structure>"
+    ]
 }}"""
+
+
+def build_tailor_prompt(job_description: str, resume_text: str) -> str:
+        return f"""You are an expert resume writer.
+
+Rewrite the resume below for the job description. Never invent experience, skills, certifications, 
+achievements, employers, metrics or technologies not present in the source resume.Incorporate relevant keywords naturally,
+strengthen impact language without fabricating facts, and reorder bullet points to match the
+job priorities. Preserve the resume's section structure. Return only the full tailored resume
+as plain text, with no markdown fences or explanation.
+
+RESUME TEXT:
+{resume_text}
+
+JOB DESCRIPTION:
+{job_description}"""
 
 
 @app.get("/")
@@ -109,6 +124,44 @@ def analyze_resume():
 
     except Exception as exc:  # pragma: no cover - backend API errors
         app.logger.exception("Gemini API request failed")
+        return jsonify({"error": {"message": str(exc)}}), 500
+
+
+@app.post("/api/tailor")
+def tailor_resume():
+    if "resume" not in request.files:
+        return jsonify({"error": {"message": "No resume PDF was uploaded."}}), 400
+
+    resume_file = request.files["resume"]
+    job_description = request.form.get("job_description", "").strip()
+    if not resume_file or resume_file.filename == "":
+        return jsonify({"error": {"message": "A PDF file is required."}}), 400
+    if not job_description:
+        return jsonify({"error": {"message": "Job description is required."}}), 400
+    if not resume_file.filename.lower().endswith(".pdf"):
+        return jsonify({"error": {"message": "Only PDF files are supported."}}), 400
+
+    pdf_bytes = resume_file.read()
+    if len(pdf_bytes) > 10 * 1024 * 1024:
+        return jsonify({"error": {"message": "Resume file exceeds the 10 MB limit."}}), 400
+
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return jsonify({"error": {"message": "GOOGLE_API_KEY or GEMINI_API_KEY is not set."}}), 500
+
+    try:
+        genai.configure(api_key=api_key)
+        resume_text = extract_pdf_text(pdf_bytes)
+        if not resume_text:
+            return jsonify({"error": {"message": "Could not read any text from the uploaded PDF."}}), 400
+
+        model = genai.GenerativeModel(DEFAULT_MODEL)
+        response = model.generate_content(build_tailor_prompt(job_description, resume_text))
+        tailored_resume = getattr(response, "text", "") or str(response)
+        tailored_resume = tailored_resume.replace("```text", "").replace("```", "").strip()
+        return jsonify({"tailored_resume": tailored_resume})
+    except Exception as exc:  # pragma: no cover - backend API errors
+        app.logger.exception("Gemini tailoring request failed")
         return jsonify({"error": {"message": str(exc)}}), 500
 
 

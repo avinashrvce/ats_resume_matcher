@@ -5,7 +5,7 @@ ResumeMatch is a web app that analyzes a resume against a job description and pr
 - ATS compatibility score
 - keyword gap analysis
 - improvement suggestions
-- a tailored resume draft
+- an optional tailored resume draft generated after confirmation
 
 ## Features
 
@@ -14,6 +14,7 @@ ResumeMatch is a web app that analyzes a resume against a job description and pr
 - Run analysis through a Python backend
 - Use Gemini as the LLM provider
 - View ATS score and recommendations in the browser
+- Choose whether to generate a tailored resume after reviewing the score
 
 ## Tech Stack
 
